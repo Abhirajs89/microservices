@@ -1,6 +1,8 @@
 package com.example.microservices.currencyconversionservice.controller;
 
 import com.example.microservices.currencyconversionservice.bean.CurrencyConversion;
+import com.example.microservices.currencyconversionservice.feign.CurrencyExchangeProxy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.propertyeditors.CurrencyEditor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +15,9 @@ import java.util.HashMap;
 
 @RestController
 public class CurrencyConversionController {
+
+    @Autowired
+    CurrencyExchangeProxy proxy;
 
     @GetMapping("/currency-conversion/from/{from}/to/{to}/quantity/{quantity}")
     public CurrencyConversion calculateCurrencyConversion(@PathVariable  String from,
@@ -32,6 +37,24 @@ public class CurrencyConversionController {
                 currencyConversion.getFrom(),currencyConversion.getTo()
                 ,currencyConversion.getConversionMultiple(),quantity
                 ,quantity.multiply(currencyConversion.getConversionMultiple())
-                ,currencyConversion.getEnvironment());
+                ,currencyConversion.getEnvironment()+ " " +" Rest");
+    }
+
+    @GetMapping("/currency-conversion-feign/from/{from}/to/{to}/quantity/{quantity}")
+    public CurrencyConversion calculateCurrencyConversionFeign(@PathVariable  String from,
+                                                          @PathVariable  String to,
+                                                          @PathVariable BigDecimal quantity){
+
+        HashMap<String,String> uriVariables = new HashMap<>();
+        uriVariables.put("from",from);
+        uriVariables.put("to",to);
+
+        CurrencyConversion currencyConversion = proxy.retrieveExchangeValue(from,to);
+
+        return new CurrencyConversion(currencyConversion.getId(),
+                currencyConversion.getFrom(),currencyConversion.getTo()
+                ,currencyConversion.getConversionMultiple(),quantity
+                ,quantity.multiply(currencyConversion.getConversionMultiple())
+                ,currencyConversion.getEnvironment()+ " " +" Feign");
     }
 }
